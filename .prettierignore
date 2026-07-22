@@ -1,0 +1,13 @@
+/dist
+.claude/
+mcp/
+node_modules/
+
+package-lock.json
+package.json
+tsconfig.json
+
+.prettierignore
+.prettierrc
+.gitignore
+.env.example
