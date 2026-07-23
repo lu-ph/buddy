@@ -93,7 +93,7 @@ async function captureWindows(outputPath: string): Promise<void> {
   const base64Script = Buffer.from(psScript, "utf16le").toString("base64");
 
   await execAsync(
-    `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${base64Script}`
+    `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${base64Script}`,
   );
 }
 

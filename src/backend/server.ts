@@ -7,6 +7,7 @@ import cors from "cors";
 import path from "path";
 import { ClientToServerMessage } from "./types/agent-ws-vo.js";
 import { NoteSyncSession } from "./service/note-sync-session.js";
+import { PDFViewerSession } from "./service/pdf-viewer-session.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -66,7 +67,10 @@ wss.on("connection", (ws: WSClient) => {
     session.disconnect();
   });
 
-  const noteSession = new NoteSyncSession(ws)
+  new NoteSyncSession(ws);
+
+  const pdfViewerSession = new PDFViewerSession(ws);
+  pdfViewerSession.handleMessages();
 });
 
 server.listen(PORT, () => {

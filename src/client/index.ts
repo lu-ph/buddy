@@ -1,8 +1,11 @@
-import readline from "readline"
-import WebSocket from "ws"
-import dotenv from "dotenv"
+import readline from "readline";
+import WebSocket from "ws";
+import dotenv from "dotenv";
 import { ChildProcess, spawn } from "child_process";
-import { ServerToClientMessage, WSChatMessageRequest } from "./types/agent-ws-vo";
+import {
+  ServerToClientMessage,
+  WSChatMessageRequest,
+} from "./types/agent-ws-vo";
 import { WSChatClient } from "./ws/ws-chat-client";
 import express from "express";
 import path from "path";
@@ -11,27 +14,31 @@ dotenv.config();
 
 const rl = readline.createInterface({
   input: process.stdin,
-	output: process.stdout
-})
+  output: process.stdout,
+});
 
 const logger = {
-	agent: (content: string) => {
+  agent: (content: string) => {
     console.log(`\x1b[34mAgent: ${content}\x1b[0m`);
   },
-  
+
   tool: (name: string, input: string) => {
-    console.log(`\x1b[35m[Tool] ${name}: ${input}\x1b[0m`);
+    const formattedInput =
+      typeof input === "object" ? JSON.stringify(input, null, 2) : input;
+    console.log(`\x1b[35m[Tool] ${name}: ${formattedInput}\x1b[0m`);
   },
-  
+
   final: (success: boolean, cost: string, duration: string) => {
-    console.log(`[Done] success=${success}, duration=${duration}, cost=${cost}\n`);
+    console.log(
+      `[Done] success=${success}, duration=${duration}, cost=${cost}\n`,
+    );
   },
 
   error: (text: string) => {
     console.log(`[Error] ${text}`);
   },
 
-	system: (text: string) => {
+  system: (text: string) => {
     console.log(`[System] ${text}`);
   },
 };
@@ -39,37 +46,36 @@ const logger = {
 let client: WSChatClient;
 
 function waitForPrompt(): void {
-	rl.question("> ", (input) => {
-		const trimmedInput = input.trim()
+  rl.question("> ", (input) => {
+    const trimmedInput = input.trim();
 
-		if (trimmedInput.toLowerCase() === "exit") {
+    if (trimmedInput.toLowerCase() === "exit") {
       logger.system("Closing connection...");
       client.close();
       rl.close();
       return;
     }
 
-		if (!trimmedInput) {
-			waitForPrompt()
-			return
-		}
+    if (!trimmedInput) {
+      waitForPrompt();
+      return;
+    }
 
-		const chatRequest: WSChatMessageRequest = {
-			type: "chat",
-			content: trimmedInput
-		}
+    const chatRequest: WSChatMessageRequest = {
+      type: "chat",
+      content: trimmedInput,
+    };
 
     if (client.getWSReadyState() == WebSocket.OPEN) {
-      client.sendChatMessage(JSON.stringify(chatRequest))
+      client.sendChatMessage(JSON.stringify(chatRequest));
     } else {
-      logger.error("WebSocket is not ready")
-      waitForPrompt()
+      logger.error("WebSocket is not ready");
+      waitForPrompt();
     }
-	})
+  });
 }
 
-client = new WSChatClient(logger, waitForPrompt)
-
+client = new WSChatClient(logger, waitForPrompt);
 
 const app = express();
 
@@ -82,7 +88,6 @@ app.get("/", (req, res) => {
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");
 });
-
 
 // let serverProcess: ChildProcess | null
 

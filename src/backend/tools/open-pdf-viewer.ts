@@ -3,23 +3,23 @@ import { exec } from "child_process";
 import path from "path";
 import { z } from "zod";
 
-export function createNotePanelMcpServer(): any {
+export function createPdfViewerMcpServer(): any {
   return createSdkMcpServer({
-    name: "note-panel",
+    name: "pdf-viewer",
     version: "1.0.0",
     tools: [
       {
-        name: "note_panel",
+        name: "pdf_viewer",
         description:
-          "Open a real-time synchronized note preview/editor window on the right side of the desktop. Directly modify the source file to update the NotePanel preview in real time.",
+          "Open a PDF in the browser for explaining concepts or other uses. Opens the browser to localhost:5173/pdfviewer?filePath=xxx.pdf.",
         inputSchema: z.object({
-          filePath: z
-            .string()
-            .describe("Path to the note file (absolute paths)"),
+          filePath: z.string().describe("Absolute path to the PDF file"),
         }),
         handler: async ({ filePath }) => {
           const absolutePath = path.resolve(filePath as string);
-          const targetUrl = `http://localhost:5173/notepanel?filePath=${encodeURIComponent(absolutePath)}`;
+          const targetUrl = `http://localhost:5173/pdfviewer?filePath=${encodeURIComponent(
+            absolutePath,
+          )}`;
 
           const flags = `--app="${targetUrl}" --window-position=960,0 --window-size=960,1040`;
           const cmd =
@@ -33,7 +33,7 @@ export function createNotePanelMcpServer(): any {
             content: [
               {
                 type: "text",
-                text: `Opened note preview in right-side window: ${absolutePath}`,
+                text: `Opened PDF viewer window for: ${absolutePath}`,
               },
             ],
           };

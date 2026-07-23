@@ -15,7 +15,7 @@ export const NotePanel: React.FC = () => {
 
   const wsRef = useRef<WebSocket | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  
+
   const isLocalEditingRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export const NotePanel: React.FC = () => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
     const wsUrl = `${protocol}//${host}/ws?clientType=note&filePath=${encodeURIComponent(
-      targetFilePath
+      targetFilePath,
     )}`;
 
     const ws = new WebSocket(wsUrl);
@@ -64,7 +64,11 @@ export const NotePanel: React.FC = () => {
               const selectionEnd = textarea?.selectionEnd;
 
               requestAnimationFrame(() => {
-                if (textarea && selectionStart !== undefined && selectionEnd !== undefined) {
+                if (
+                  textarea &&
+                  selectionStart !== undefined &&
+                  selectionEnd !== undefined
+                ) {
                   textarea.setSelectionRange(selectionStart, selectionEnd);
                 }
               });
@@ -141,9 +145,7 @@ export const NotePanel: React.FC = () => {
       {/* 主编辑区 Main Editor */}
       <main className="note-body">
         {status === "error" && !filePath ? (
-          <div className="note-empty-state">
-            缺失 filePath 参数
-          </div>
+          <div className="note-empty-state">缺失 filePath 参数</div>
         ) : (
           <textarea
             ref={textareaRef}

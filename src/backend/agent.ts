@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-  query,
-  type Query,
-} from "@anthropic-ai/claude-agent-sdk";
+import { query, type Query } from "@anthropic-ai/claude-agent-sdk";
 import dotenv from "dotenv";
 import { createScreenshotMcpServer } from "./tools/screen-capture.js";
 import { createNotePanelMcpServer } from "./tools/open-note-panel.js";
+import { createPdfViewerMcpServer } from "./tools/open-pdf-viewer.js";
 
 dotenv.config();
 
@@ -79,10 +77,8 @@ export class Agent {
             // - ANTHROPIC_API_KEY = '' (must be empty to avoid official OAuth)
             // - ANTHROPIC_BASE_URL = 'https://openrouter.ai/api'
             ...process.env,
-            ANTHROPIC_AUTH_TOKEN:
-              process.env.ANTHROPIC_AUTH_TOKEN,
-            ANTHROPIC_BASE_URL:
-              process.env.ANTHROPIC_BASE_URL,
+            ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN,
+            ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL,
             ANTHROPIC_API_KEY: "",
             ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
           },
@@ -92,7 +88,8 @@ export class Agent {
               args: ["@playwright/mcp@latest"],
             },
             screenshot: createScreenshotMcpServer(),
-            notePanel: createNotePanelMcpServer()
+            notePanel: createNotePanelMcpServer(),
+            pdfViewer: createPdfViewerMcpServer(),
           },
           permissionMode: "bypassPermissions",
           allowedTools: [
@@ -103,7 +100,8 @@ export class Agent {
             "Glob",
             "mcp__playwright__*",
             "mcp__screenshot__*",
-            "mcp__note-panel*"
+            "mcp__note-panel__*",
+            "mcp__pdf-viewer__*",
           ],
         },
       })[Symbol.asyncIterator]();

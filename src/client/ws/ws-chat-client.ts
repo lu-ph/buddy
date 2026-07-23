@@ -1,76 +1,81 @@
-import { ServerToClientMessage, WSChatMessageRequest } from "../types/agent-ws-vo";
-import WebSocket from "ws"
+import {
+  ServerToClientMessage,
+  WSChatMessageRequest,
+} from "../types/agent-ws-vo";
+import WebSocket from "ws";
 
 interface Logger {
-	agent: (content: string) => void;
-	tool: (name: string, input: string) => void;
-	final: (success: boolean, cost: string, duration: string) => void;
-	error: (text: string) => void;
-	system: (text: string) => void;
+  agent: (content: string) => void;
+  tool: (name: string, input: string) => void;
+  final: (success: boolean, cost: string, duration: string) => void;
+  error: (text: string) => void;
+  system: (text: string) => void;
 }
-     
-type WaitInputCallback = () => void
+
+type WaitInputCallback = () => void;
 
 export class WSChatClient {
-	private ws: WebSocket
+  private ws: WebSocket;
 
-	constructor(logger: Logger, waitForPrompt: WaitInputCallback) {
-		const rawServerUrl = process.env.SERVER_URL;
-		const serverUrl = rawServerUrl
-			? rawServerUrl.startsWith("ws://") || rawServerUrl.startsWith("wss://")
-				? rawServerUrl
-				: `ws://${rawServerUrl}`
-			: "ws://localhost:3000/ws";
+  constructor(logger: Logger, waitForPrompt: WaitInputCallback) {
+    const rawServerUrl = process.env.SERVER_URL;
+    const serverUrl = rawServerUrl
+      ? rawServerUrl.startsWith("ws://") || rawServerUrl.startsWith("wss://")
+        ? rawServerUrl
+        : `ws://${rawServerUrl}`
+      : "ws://localhost:3000/ws";
 
-		const normalizedServerUrl = serverUrl.endsWith("/ws") ? serverUrl : `${serverUrl}/ws`;
+    const normalizedServerUrl = serverUrl.endsWith("/ws")
+      ? serverUrl
+      : `${serverUrl}/ws`;
 
-		logger.system(`Connecting to ${normalizedServerUrl}`);
+    logger.system(`Connecting to ${normalizedServerUrl}`);
 
-		this.ws = new WebSocket(normalizedServerUrl)
+    this.ws = new WebSocket(normalizedServerUrl);
 
-		this.ws.on("open", () => {
-			logger.system("Connected to Agent Backend.");
-			
-			waitForPrompt();
-		});
+    this.ws.on("open", () => {
+      logger.system("Connected to Agent Backend.");
 
-		this.ws.on("close", () => {
-			logger.system("Disconnected");
-			process.exit(0);
-		});
+      waitForPrompt();
+    });
 
-		this.ws.on("error", (err) => {
-			logger.error(`WebSocket Error: ${err.message}`);
-		});
+    this.ws.on("close", () => {
+      logger.system("Disconnected");
+      process.exit(0);
+    });
 
-		this.ws.on("message", (rawMessage: string) => {
-			try {
-				const msg: ServerToClientMessage = JSON.parse(rawMessage.toString());
+    this.ws.on("error", (err) => {
+      logger.error(`WebSocket Error: ${err.message}`);
+    });
 
-				switch (msg.type) {
-					case "agent_text_response":
-						logger.agent(msg.content);
-						break;
+    this.ws.on("message", (rawMessage: string) => {
+      try {
+        const msg: ServerToClientMessage = JSON.parse(rawMessage.toString());
 
-					case "agent_tool_response":
-						logger.tool(msg.toolName, msg.toolInput);
-						break;
+        switch (msg.type) {
+          case "agent_text_response":
+            logger.agent(msg.content);
+            break;
 
-					case "agent_final_result":
-						logger.final(msg.success, msg.cost, msg.duration);
-						waitForPrompt();
-						break;
+          case "agent_tool_response":
+            logger.tool(msg.toolName, msg.toolInput);
+            break;
 
-					default:
-						console.log("unknown message recieved:", msg);
-				}
-			} catch (error) {
-				logger.error(`failed to handle message ${error}`)
-			}
-		})
-	}
+          case "agent_final_result":
+            logger.final(msg.success, msg.cost, msg.duration);
+            waitForPrompt();
+            break;
 
-	public sendChatMessage(content: string): boolean {
+          default:
+            console.log("unknown message recieved:", msg);
+        }
+      } catch (error) {
+        logger.error(`failed to handle message ${error}`);
+      }
+    });
+  }
+
+  public sendChatMessage(content: string): boolean {
     if (this.ws.readyState === WebSocket.OPEN) {
       const chatRequest: WSChatMessageRequest = {
         type: "chat",
@@ -82,11 +87,11 @@ export class WSChatClient {
     return false;
   }
 
-	public getWSReadyState() {
-		return this.ws.readyState
-	}
+  public getWSReadyState() {
+    return this.ws.readyState;
+  }
 
-	public close(): void {
+  public close(): void {
     this.ws.close();
   }
 }

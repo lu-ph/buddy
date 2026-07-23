@@ -1,12 +1,12 @@
-// client -> server 
+// client -> server
 export interface WSNoteSessionInit {
   type: "note_init";
   filePath: string;
 }
 
 export interface WSNoteSessionInitResp {
-  type: "note_init_resp"
-  fileContent: string
+  type: "note_init_resp";
+  fileContent: string;
 }
 
 // server -> client
@@ -22,23 +22,17 @@ export interface WSUpdateUserEditedNote {
 }
 
 export interface WSNoteSessionClientErrorMessage {
-  type: "client_error"
-  message: string
+  type: "client_error";
+  message: string;
 }
 
 export interface WSNoteSessionBackendErrorMessage {
-  type: "backend_error"
-  message: string
+  type: "backend_error";
+  message: string;
 }
 
 export type ServerToClientNoteMsg =
-  | WSNoteChange
-  | WSNoteSessionInitResp
-  | WSNoteSessionBackendErrorMessage
+  WSNoteChange | WSNoteSessionInitResp | WSNoteSessionBackendErrorMessage;
 
-export type ClientToServerNoteMsg = 
-  | WSUpdateUserEditedNote
-  | WSNoteSessionInit
-  | WSNoteSessionClientErrorMessage
-
-  
+export type ClientToServerNoteMsg =
+  WSUpdateUserEditedNote | WSNoteSessionInit | WSNoteSessionClientErrorMessage;

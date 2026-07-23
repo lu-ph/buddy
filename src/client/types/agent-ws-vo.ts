@@ -1,5 +1,4 @@
-export type ClientToServerMessage = 
-  | WSChatMessageRequest
+export type ClientToServerMessage = WSChatMessageRequest;
 
 export interface WSChatMessageRequest {
   type: "chat";
@@ -8,9 +7,7 @@ export interface WSChatMessageRequest {
 }
 
 export type ServerToClientMessage =
-  | AgentTextResponse 
-  | AgentToolResponse 
-  | AgentFinalResult
+  AgentTextResponse | AgentToolResponse | AgentFinalResult;
 
 interface AgentTextResponse {
   type: "agent_text_response";

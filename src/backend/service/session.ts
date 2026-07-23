@@ -8,7 +8,7 @@ export class Session {
 
   constructor(client: WSClient) {
     this.agent = new Agent();
-    this.client = client
+    this.client = client;
   }
 
   public disconnect() {
