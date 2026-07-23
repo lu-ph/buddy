@@ -5,6 +5,7 @@ import {
 } from "@anthropic-ai/claude-agent-sdk";
 import dotenv from "dotenv";
 import { createScreenshotMcpServer } from "./tools/screen-capture.js";
+import { createNotePanelMcpServer } from "./tools/open-note-panel.js";
 
 dotenv.config();
 
@@ -91,6 +92,7 @@ export class Agent {
               args: ["@playwright/mcp@latest"],
             },
             screenshot: createScreenshotMcpServer(),
+            notePanel: createNotePanelMcpServer()
           },
           permissionMode: "bypassPermissions",
           allowedTools: [
@@ -101,6 +103,7 @@ export class Agent {
             "Glob",
             "mcp__playwright__*",
             "mcp__screenshot__*",
+            "mcp__note-panel*"
           ],
         },
       })[Symbol.asyncIterator]();

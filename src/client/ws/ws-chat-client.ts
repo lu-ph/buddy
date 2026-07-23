@@ -1,4 +1,4 @@
-import { ServerToClientMessage, WSChatMessageRequest } from "./types/agent-ws-vo";
+import { ServerToClientMessage, WSChatMessageRequest } from "../types/agent-ws-vo";
 import WebSocket from "ws"
 
 interface Logger {
@@ -11,7 +11,7 @@ interface Logger {
      
 type WaitInputCallback = () => void
 
-export class WSClient {
+export class WSChatClient {
 	private ws: WebSocket
 
 	constructor(logger: Logger, waitForPrompt: WaitInputCallback) {

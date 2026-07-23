@@ -6,6 +6,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { ClientToServerMessage } from "./types/agent-ws-vo.js";
+import { NoteSyncSession } from "./service/note-sync-session.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -13,10 +14,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/client", express.static(path.join(__dirname, "./client")));
+app.use("/client", express.static(path.join(__dirname, "../client")));
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/index.html"));
+  res.sendFile(path.join(__dirname, "../client/note-panel/index.html"));
 });
 
 export interface WSClient extends WebSocket {
@@ -64,6 +65,8 @@ wss.on("connection", (ws: WSClient) => {
     console.log("Websocket client disconnected");
     session.disconnect();
   });
+
+  const noteSession = new NoteSyncSession(ws)
 });
 
 server.listen(PORT, () => {
