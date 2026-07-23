@@ -1,7 +1,5 @@
-export type ServerToClientPDFMessage = 
-	| WSJumpToPage
-	| WSPDFNextPage
-	| WSPDFPreviousPage
+export type ServerToClientPDFMessage =
+  WSJumpToPage | WSPDFNextPage | WSPDFPreviousPage;
 
 interface WSJumpToPage {
   type: "jump_to_page";
@@ -9,13 +7,12 @@ interface WSJumpToPage {
 }
 
 interface WSPDFNextPage {
-	type: "next_page"
+  type: "next_page";
 }
 
 interface WSPDFPreviousPage {
-	type: "previous_page"
+  type: "previous_page";
 }
-
 
 export type ClientToServerPDFMessage = WSGetPDF;
 

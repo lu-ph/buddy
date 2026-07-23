@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"tsx src/client/index.ts\" \"tsx src/backend/server.ts\"",
-    "dev:cli": "tsx src/client/index.ts",
+    "dev": "tsx src/main.ts",
+    "dev:cli": "tsx src/client/cli.ts",
     "dev:frontend": "vite",
     "dev:backend": "tsx src/backend/server.ts",
     "build": "tsc",
