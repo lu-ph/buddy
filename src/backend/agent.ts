@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { createScreenshotMcpServer } from "./tools/screen-capture.js";
 import { createNotePanelMcpServer } from "./tools/open-note-panel.js";
 import { createPdfViewerMcpServer } from "./tools/open-pdf-viewer.js";
+import { createPresentationWindowMcpServer } from "./tools/open-presentation-window.js"
 
 dotenv.config();
 
@@ -90,6 +91,7 @@ export class Agent {
             screenshot: createScreenshotMcpServer(),
             notePanel: createNotePanelMcpServer(),
             pdfViewer: createPdfViewerMcpServer(),
+            presentationWindow: createPresentationWindowMcpServer()
           },
           permissionMode: "bypassPermissions",
           allowedTools: [
@@ -102,6 +104,7 @@ export class Agent {
             "mcp__screenshot__*",
             "mcp__note-panel__*",
             "mcp__pdf-viewer__*",
+            "mcp__presentation-window__*"
           ],
         },
       })[Symbol.asyncIterator]();

@@ -15,17 +15,23 @@ export class PDFViewerSession {
   public async handleMessages(): Promise<void> {
     this.ws.on("message", async (rawMessage: any) => {
       const message: ClientToServerPDFMessage = JSON.parse(rawMessage);
+      try {
+        switch (message.type) {
+          case "get_pdf": {
+            const pdfPath = message.pdfPath;
+            const buffer: Buffer = await this.getPDFBuffer(pdfPath);
+            this.sendPdfBuffer(buffer);
+            break;
+          }
 
-      switch (message.type) {
-        case "get_pdf": {
-          const pdfPath = message.pdfPath;
-          const buffer: Buffer = await this.getPDFBuffer(pdfPath);
-          this.sendPdfBuffer(buffer);
-          break;
+          default:
+            console.log("unknown message:", message.type);
         }
-
-        default:
-          console.log("unknown message:", message.type);
+      } catch (error) {
+        this.sendToClient({
+          type: "pdf_session_error",
+          message: error as string
+        })
       }
     });
   }

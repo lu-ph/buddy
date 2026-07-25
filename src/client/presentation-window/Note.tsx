@@ -6,8 +6,8 @@ import {
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
 
-export const NotePanel: React.FC = () => {
-  const [filePath, setFilePath] = useState<string>("");
+export const NotePanel: React.FC<{ filePath: string | null }> = ({ filePath: initialFilePath }) => {
+  const [filePath, setFilePath] = useState<string>(initialFilePath || "");
   const [content, setContent] = useState<string>("");
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [stats, setStats] = useState({ lines: 1, chars: 0 });
@@ -17,8 +17,7 @@ export const NotePanel: React.FC = () => {
   const isLocalEditingRef = useRef<boolean>(false);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const targetFilePath = urlParams.get("filePath") || "";
+    const targetFilePath = initialFilePath || "";
     setFilePath(targetFilePath);
 
     if (!targetFilePath) {
@@ -37,7 +36,6 @@ export const NotePanel: React.FC = () => {
 
     ws.onopen = () => {
       setStatus("connected");
-
       const initMessage: ClientToServerNoteMsg = {
         type: "note_init",
         filePath: targetFilePath,
@@ -78,22 +76,17 @@ export const NotePanel: React.FC = () => {
           });
         }
       } catch (err) {
-        console.error("[NoteSync] 消息解析错误:", err);
+        console.error("[NoteSync] message parse error:", err);
       }
     };
 
-    ws.onerror = () => {
-      setStatus("error");
-    };
-
-    ws.onclose = () => {
-      setStatus("disconnected");
-    };
+    ws.onerror = () => setStatus("error");
+    ws.onclose = () => setStatus("disconnected");
 
     return () => {
       ws.close();
     };
-  }, []);
+  }, [initialFilePath]);
 
   const updateStats = (text: string) => {
     const lines = text ? text.split("\n").length : 1;
@@ -122,7 +115,7 @@ export const NotePanel: React.FC = () => {
   const fileName = filePath ? filePath.split(/[/\\]/).pop() : "未选择文件";
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#1e1e1e] text-[#d4d4d4] font-sans overflow-hidden">
+    <div className="flex flex-col h-full bg-[#1e1e1e] text-[#d4d4d4] font-sans overflow-hidden">
       <header className="h-[40px] bg-[#252526] border-b border-[#333333] flex items-center justify-between px-[14px] select-none">
         <div className="flex items-center gap-[8px] max-w-[70%]" title={filePath}>
           <span className="text-[14px]">📄</span>

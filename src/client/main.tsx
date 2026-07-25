@@ -2,6 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import NotePanel from "./note-panel/NotePanel";
 import PDFViewer from "./pdf-viewer/PDFViewer";
+import PresentationWindow from "./presentation-window/PresentationWindow";
+import "./index.css"
 
 const App = () => {
   const path = window.location.pathname;
@@ -14,12 +16,20 @@ const App = () => {
     );
   }
 
-  if (path === "/notepanel" || path === "/") {
+  if (path === "/notepanel") {
     return (
       <StrictMode>
         <NotePanel />
       </StrictMode>
     );
+  }
+
+  if (path === "/presentation-window") {
+    return (
+      <StrictMode>
+        <PresentationWindow />
+      </StrictMode>
+    )
   }
 
   return (
