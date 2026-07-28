@@ -7,7 +7,9 @@ import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-export const PDFViewerPanel: React.FC<{ filePath: string | null }> = ({ filePath }) => {
+export const PDFViewerPanel: React.FC<{ filePath: string | null }> = ({
+  filePath,
+}) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageInput, setPageInput] = useState<string>("1");
@@ -25,7 +27,7 @@ export const PDFViewerPanel: React.FC<{ filePath: string | null }> = ({ filePath
     virtuosoRef.current?.scrollToIndex({
       index: safePageNum - 1,
       align: "center",
-      behavior: "auto"
+      behavior: "auto",
     });
   };
 
@@ -49,7 +51,7 @@ export const PDFViewerPanel: React.FC<{ filePath: string | null }> = ({ filePath
 
               const parsed = parseInt(val, 10);
               const maxPage = numPages > 0 ? numPages : Infinity;
-              
+
               if (!isNaN(parsed) && parsed >= 1 && parsed <= maxPage) {
                 handleJumpToPage(parsed);
               }
@@ -72,7 +74,11 @@ export const PDFViewerPanel: React.FC<{ filePath: string | null }> = ({ filePath
           </button>
           <button
             disabled={currentPage >= numPages && numPages > 0}
-            onClick={() => handleJumpToPage(Math.min(currentPage + 1, numPages > 0 ? numPages : Infinity))}
+            onClick={() =>
+              handleJumpToPage(
+                Math.min(currentPage + 1, numPages > 0 ? numPages : Infinity),
+              )
+            }
             className="bg-[#0e639c] text-white border-none rounded-[2px] px-[14px] py-[6px] text-[13px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-[#1177bb]"
           >
             下一页
@@ -93,9 +99,9 @@ export const PDFViewerPanel: React.FC<{ filePath: string | null }> = ({ filePath
               totalCount={numPages}
               itemContent={(index) => (
                 <div className="mb-[12px] bg-white rounded-[2px] shadow-[0_4px_10px_rgba(0,0,0,0.3)] min-h-[1130px] w-[800px] flex justify-center">
-                  <Page 
-                    pageNumber={index + 1} 
-                    width={800} 
+                  <Page
+                    pageNumber={index + 1}
+                    width={800}
                     loading={
                       <div className="flex h-[1130px] w-[800px] items-center justify-center bg-[#2d2d2d] text-[#a0a0a0] text-[15px] font-medium tracking-wide">
                         Loading Page {index + 1}...

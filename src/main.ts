@@ -1,6 +1,7 @@
-import { ChildProcess, spawn } from "node:child_process";
+import { ChildProcess, spawn, exec } from "node:child_process";
 import path from "node:path";
-import net from "node:net"
+import net from "node:net";
+import dotenv from "dotenv";
 
 let backendProcess: ChildProcess | null = null;
 let viteProcess: ChildProcess | null = null;
@@ -33,16 +34,16 @@ function checkPortReady(port: number, timeout = 10000): Promise<void> {
 function startBackend(): Promise<void> {
   console.log("\x1b[36m[Main] 1/3 Starting Backend Server...\x1b[0m");
 
-	const serverPath = path.join(__dirname, "backend", "server.ts")
-	backendProcess = spawn(npxCmd, ["tsx", serverPath], {
+  const serverPath = path.join(__dirname, "backend", "server.ts");
+  backendProcess = spawn(npxCmd, ["tsx", serverPath], {
     stdio: "inherit",
     shell: true,
   });
-	return checkPortReady(3000);
+  return checkPortReady(3000);
 }
 
 function startViteFrontend(): void {
-	console.log("\x1b[36m[Main] 2/3 Starting Vite Frontend...\x1b[0m");
+  console.log("\x1b[36m[Main] 2/3 Starting Vite Frontend...\x1b[0m");
 
   viteProcess = spawn(npmCmd, ["run", "dev:frontend"], {
     stdio: "inherit",
@@ -51,11 +52,13 @@ function startViteFrontend(): void {
 }
 
 function launchCli() {
-  console.log("\x1b[36m[Main] 3/3 Launching CLI in a new terminal window...\x1b[0m");
+  console.log(
+    "\x1b[36m[Main] 3/3 Launching CLI in a new terminal window...\x1b[0m",
+  );
 
   const cliPath = path.join(__dirname, "client", "cli.ts");
-  
-	const relativeCliPath = path.relative(process.cwd(), cliPath);
+
+  const relativeCliPath = path.relative(process.cwd(), cliPath);
   const command = `${npxCmd} tsx ${relativeCliPath}`;
 
   if (isWin) {
@@ -73,7 +76,7 @@ function launchCli() {
       {
         detached: true,
         stdio: "ignore",
-      }
+      },
     );
   } else {
     spawn("x-terminal-emulator", ["-e", command], {
@@ -81,6 +84,38 @@ function launchCli() {
       stdio: "ignore",
     });
   }
+}
+
+function openAgentPanel() {
+  console.log("\x1b[36m[Main] 3/3 Launching agent panel...\x1b[0m");
+
+  dotenv.config();
+
+  const FRONTEND_PORT = process.env.FRONTEND_PORT || 5173;
+  const targetUrl = `http://localhost:${FRONTEND_PORT}/agent-panel`;
+
+  // position 和 size 可根据需要调整，这里设置在屏幕左侧，留出右侧空间给文档
+  const flags = `--app="${targetUrl}" --window-size=500,1040`;
+
+  let cmd = "";
+
+  if (process.platform === "win32") {
+    cmd = `start chrome ${flags} || start msedge ${flags}`;
+  } else if (process.platform === "darwin") {
+    cmd = `open -n -a "Google Chrome" --args ${flags}`;
+  } else {
+    cmd = `xdg-open "${targetUrl}"`;
+  }
+
+  exec(cmd, (error) => {
+    if (error) {
+      console.error(`[Error] Failed launching browser: \n${error.message}`);
+    } else {
+      console.log(`[System] browser launched`);
+    }
+
+    process.exit(0);
+  });
 }
 
 function setupGracefulShutdown() {
@@ -95,11 +130,9 @@ function setupGracefulShutdown() {
       viteProcess.kill();
       viteProcess = null;
     }
-
-    process.exit(0);
   };
 
-  process.on("SIGINT", cleanup); 
+  process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
 }
 
@@ -109,7 +142,8 @@ async function main() {
   try {
     await startBackend();
     startViteFrontend();
-    launchCli();
+    // launchCli();
+    openAgentPanel();
   } catch (err) {
     console.error("\x1b[31m[Main] Application failed to start:\x1b[0m", err);
     if (backendProcess) backendProcess.kill();

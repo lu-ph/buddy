@@ -1,21 +1,36 @@
+import { WebSocket } from "ws";
 import { Agent } from "../agent.js";
 import type { WSClient } from "../server.js";
+import { BaseSession } from "../types/interface/session.js";
 
-export class Session {
+export class AgentSession implements BaseSession {
   private client: WSClient | null = null;
   private agent: Agent;
   private isListening: boolean = false;
+  private isDestroyed: boolean = false;
 
   constructor(client: WSClient) {
     this.agent = new Agent();
     this.client = client;
   }
 
-  public disconnect() {
-    this.client = null;
+  public async handleMessage(message: any): Promise<boolean> {
+    if (this.isDestroyed) return false;
+
+    if (message.type === "chat" || message.type === "user_message") {
+      const content = message.content || message.text;
+      if (typeof content === "string" && content.trim()) {
+        this.sendToAgent(content);
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public sendToAgent(userInput: string): void {
+    if (this.isDestroyed) return;
+
     this.agent.sendMessage(userInput);
 
     if (!this.isListening) {
@@ -23,36 +38,31 @@ export class Session {
     }
   }
 
-  public async listenToAgent() {
+  private async listenToAgent(): Promise<void> {
     if (this.isListening) return;
     this.isListening = true;
 
     try {
       for await (const message of this.agent.getOutputStream()) {
+        if (this.isDestroyed) break;
         this.handleSDKMessage(message);
       }
     } catch (error) {
-      console.error("error listening to agent: ", error);
-    }
-  }
-
-  public sendToClient(message: any): void {
-    const JsonStr = JSON.stringify(message);
-    if (!this.client) {
-      console.error("error sending to client: client is not initialized");
-      return;
-    }
-
-    try {
-      this.client.send(JsonStr);
-    } catch (error) {
-      console.error("error sending message to client: ", error);
+      console.error("[Session] Error listening to agent stream:", error);
+      this.sendToClient({
+        type: "agent_error",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      this.isListening = false;
     }
   }
 
   private handleSDKMessage(message: any): void {
+    if (!message) return;
+
     if (message.type === "assistant") {
-      const content = message.message.content;
+      const content = message.message?.content;
 
       if (typeof content === "string") {
         this.sendToClient({
@@ -84,5 +94,30 @@ export class Session {
         duration: message.duration_ms,
       });
     }
+  }
+
+  private sendToClient(message: any): void {
+    if (!this.client || this.client.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    try {
+      this.client.send(JSON.stringify(message));
+    } catch (error) {
+      console.error("[Session] Error sending message to client:", error);
+    }
+  }
+
+  public destroy(): void {
+    if (this.isDestroyed) return;
+
+    this.isDestroyed = true;
+    this.client = null;
+
+    this.agent.pause().catch((err) => {
+      console.error("[Session] Error pausing agent on destroy:", err);
+    });
+
+    console.log("[Session] Agent chat session destroyed.");
   }
 }

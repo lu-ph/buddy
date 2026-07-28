@@ -6,7 +6,9 @@ import {
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
 
-export const NotePanel: React.FC<{ filePath: string | null }> = ({ filePath: initialFilePath }) => {
+export const NotePanel: React.FC<{ filePath: string | null }> = ({
+  filePath: initialFilePath,
+}) => {
   const [filePath, setFilePath] = useState<string>(initialFilePath || "");
   const [content, setContent] = useState<string>("");
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
@@ -102,7 +104,7 @@ export const NotePanel: React.FC<{ filePath: string | null }> = ({ filePath: ini
 
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       const msg: ClientToServerNoteMsg = {
-        type: "update_user_edited_note",
+        type: "note_user_edited",
         newContent: newText,
       };
       console.log("[NotePanel WS] send:", msg);
@@ -117,7 +119,10 @@ export const NotePanel: React.FC<{ filePath: string | null }> = ({ filePath: ini
   return (
     <div className="flex flex-col h-full bg-[#1e1e1e] text-[#d4d4d4] font-sans overflow-hidden">
       <header className="h-[40px] bg-[#252526] border-b border-[#333333] flex items-center justify-between px-[14px] select-none">
-        <div className="flex items-center gap-[8px] max-w-[70%]" title={filePath}>
+        <div
+          className="flex items-center gap-[8px] max-w-[70%]"
+          title={filePath}
+        >
           <span className="text-[14px]">📄</span>
           <span className="text-[13px] font-medium text-[#e1e1e1] whitespace-nowrap overflow-hidden text-ellipsis">
             {fileName}
@@ -129,8 +134,8 @@ export const NotePanel: React.FC<{ filePath: string | null }> = ({ filePath: ini
               status === "connected"
                 ? "bg-[#4ec9b0] shadow-[0_0_6px_rgba(78,201,176,0.4)]"
                 : status === "connecting"
-                ? "bg-[#cca700] animate-pulse"
-                : "bg-[#f14c4c]"
+                  ? "bg-[#cca700] animate-pulse"
+                  : "bg-[#f14c4c]"
             }`}
           />
           <span className="text-[11px] text-[#858585]">

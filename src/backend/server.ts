@@ -1,13 +1,12 @@
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { Agent } from "./agent.js";
-import { Session } from "./service/session.js";
+import { AgentSession } from "./service/agent-session.js";
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { ClientToServerMessage } from "./types/agent-ws-vo.js";
 import { NoteSyncSession } from "./service/note-sync-session.js";
 import { PDFViewerSession } from "./service/pdf-viewer-session.js";
+import { BaseSession } from "./types/interface/session.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -34,43 +33,45 @@ wss.on("connection", (ws: WSClient) => {
   console.log(`websocket connected id:${ws.sessionId}`);
   ws.isAlive = true;
 
-  const session = new Session(ws);
+  const sessions: BaseSession[] = [
+    new AgentSession(ws),
+    new NoteSyncSession(ws),
+    new PDFViewerSession(ws),
+  ];
 
   ws.on("pong", () => {
     ws.isAlive = true;
   });
 
-  ws.on("message", (data: any) => {
+  ws.on("message", async (data: any) => {
     try {
-      const message: ClientToServerMessage = JSON.parse(data.toString());
+      const message = JSON.parse(data.toString());
+      const type = message.type as string;
 
-      switch (message.type) {
-        case "chat": {
-          session.sendToAgent(message.content);
+      let handled = false;
+      for (const session of sessions) {
+        if (await session.handleMessage(message)) {
+          handled = true;
           break;
         }
+      }
 
-        default: {
-          console.warn("unknown message type: ", (message as any).type);
-        }
+      if (!handled) {
+        console.warn(`[Router] Unhandled message type: ${type}`);
       }
     } catch (error) {
-      console.error("Error handling WebSocket message:", error);
-      ws.send(
-        JSON.stringify({ type: "error", error: "Invalid message format" }),
-      );
+      console.error("[Router] Error parsing WS message:", error);
     }
   });
 
   ws.on("close", () => {
-    console.log("Websocket client disconnected");
-    session.disconnect();
+    console.log(`WebSocket disconnected: ${ws.sessionId}`);
+    Object.values(sessions).forEach((session) => {
+      if (typeof session.destroy === "function") session.destroy();
+      if (typeof (session as any).disconnect === "function")
+        (session as any).disconnect();
+    });
   });
-
-  new NoteSyncSession(ws);
-
-  const pdfViewerSession = new PDFViewerSession(ws);
-  pdfViewerSession.handleMessages();
 });
 
 server.listen(PORT, () => {

@@ -1,7 +1,7 @@
 export type ClientToServerMessage = WSChatMessageRequest;
 
 export interface WSChatMessageRequest {
-  type: "chat";
+  type: "agent_chat";
   content: string;
   chatId?: string;
 }

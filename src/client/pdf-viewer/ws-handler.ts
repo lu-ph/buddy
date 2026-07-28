@@ -64,8 +64,10 @@ export function usePdfWebSocket(
         try {
           const message: ServerToClientPDFMessage = JSON.parse(event.data);
 
-          if (message.type === "jump_to_page") {
+          if (message.type === "pdf_jump_to_page") {
             onJumpToPage(message.pageNum);
+          } else if (message.type === "pdf_session_error") {
+            console.error("[PDF WS Error]", message.message);
           }
         } catch (err) {
           console.error("[WS Parse Error]", err);

@@ -64,7 +64,7 @@ export function usePdfWebSocket(
         try {
           const message: ServerToClientPDFMessage = JSON.parse(event.data);
 
-          if (message.type === "jump_to_page") {
+          if (message.type === "pdf_jump_to_page") {
             onJumpToPage(message.pageNum);
           }
         } catch (err) {

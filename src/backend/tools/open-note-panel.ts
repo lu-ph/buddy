@@ -1,7 +1,7 @@
 import { createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
-import { exec } from "child_process";
 import path from "path";
 import { z } from "zod";
+import { openBrowser } from "../service/open-browser";
 
 export function createNotePanelMcpServer(): any {
   return createSdkMcpServer({
@@ -21,13 +21,7 @@ export function createNotePanelMcpServer(): any {
           const absolutePath = path.resolve(filePath as string);
           const targetUrl = `http://localhost:5173/notepanel?filePath=${encodeURIComponent(absolutePath)}`;
 
-          const flags = `--app="${targetUrl}" --window-position=960,0 --window-size=960,1040`;
-          const cmd =
-            process.platform === "win32"
-              ? `start chrome ${flags} || start msedge ${flags}`
-              : `open -n -a "Google Chrome" --args ${flags}`;
-
-          exec(cmd);
+          openBrowser(targetUrl, [960, 0], [960, 1040]);
 
           return {
             content: [

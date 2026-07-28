@@ -1,88 +1,111 @@
-import fs from "fs";
+import fs, { watch } from "fs";
 import { WebSocket } from "ws";
 import {
   ClientToServerNoteMsg,
   ServerToClientNoteMsg,
-  WSNoteSessionBackendErrorMessage,
-  WSNoteSessionInit,
-  WSUpdateUserEditedNote,
-} from "../types/note-session-ws-vo";
+} from "../types/ws/note-session-ws-vo";
+import { BaseSession } from "../types/interface/session";
+import { readFile, writeFile } from "fs/promises";
 
-export class NoteSyncSession {
+export class NoteSyncSession implements BaseSession {
   public readonly sessionId: string;
   private lastKnownContent: string | null = null;
   private filePath: string | null = null;
   private ws: WebSocket;
   private fileWatcher: fs.FSWatcher | null = null;
+  private watchDebounceTimer: NodeJS.Timeout | null = null;
+  private writeQueue: Promise<void> = Promise.resolve();
 
   constructor(ws: WebSocket) {
     this.sessionId = `note_session_${Date.now()}`;
     this.ws = ws;
+  }
 
-    this.ws.on("message", (rawMessage: string | Buffer) => {
-      try {
-        const data: ClientToServerNoteMsg = JSON.parse(rawMessage.toString());
+  public async handleMessage(data: ClientToServerNoteMsg): Promise<boolean> {
+    if (data.type === "note_init") {
+      if (!data.filePath) return this.error("filePath cannot be empty");
+      await this.initNote(data.filePath);
+      return true;
+    }
 
-        switch (data.type) {
-          case "note_init":
-            const initMessage: WSNoteSessionInit = data as WSNoteSessionInit;
-            if (!initMessage.filePath) {
-              this.sendToClient({
-                type: "backend_error",
-                message: "filePath can not be empty",
-              });
-              break;
-            }
-            this.filePath = initMessage.filePath;
-            this.lastKnownContent = fs.readFileSync(this.filePath, "utf-8");
-
-            this.sendToClient({
-              type: "note_init_resp",
-              fileContent: this.lastKnownContent,
-            });
-
-            this.fileWatcher = fs.watch(this.filePath, (eventType) => {
-              if (eventType == "change") {
-                const currentContent = fs.readFileSync(this.filePath!, "utf-8");
-                if (currentContent !== this.lastKnownContent) {
-                  this.lastKnownContent = currentContent;
-                  this.sendToClient({
-                    type: "note_change",
-                    newContent: this.lastKnownContent,
-                  });
-                }
-              }
-            });
-
-            console.log(`watching file: ${this.filePath}`);
-
-            break;
-
-          case "update_user_edited_note":
-            const updateMessage = data as WSUpdateUserEditedNote;
-            if (
-              updateMessage.newContent ||
-              this.lastKnownContent !== updateMessage.newContent ||
-              this.filePath
-            ) {
-              this.lastKnownContent = updateMessage.newContent;
-              fs.writeFileSync(
-                this.filePath!,
-                updateMessage.newContent,
-                "utf-8",
-              );
-            } else {
-              const errorMsg: WSNoteSessionBackendErrorMessage = {
-                type: "backend_error",
-                message: "content is null or filePath is not initalized",
-              };
-              this.sendToClient(errorMsg);
-            }
-        }
-      } catch (error) {
-        console.error("failed to handle user edit note message: ", error);
+    if (data.type === "note_user_edited") {
+      if (data.newContent === undefined || !this.filePath) {
+        return this.error("Content missing or not initialized");
       }
-    });
+      this.handleUserEdit(data.newContent);
+      return true;
+    }
+
+    return false;
+  }
+
+  private async initNote(filePath: string) {
+    try {
+      this.filePath = filePath;
+      this.lastKnownContent = await readFile(this.filePath, "utf-8");
+
+      this.sendToClient({
+        type: "note_init_resp",
+        fileContent: this.lastKnownContent,
+      });
+      this.setupFileWatcher();
+      console.log(`[NoteSync] Watching: ${this.filePath}`);
+    } catch (err: any) {
+      this.error(`Init failed: ${err.message}`);
+    }
+  }
+
+  private setupFileWatcher() {
+    if (this.fileWatcher) this.fileWatcher.close();
+    if (!this.filePath) return;
+
+    try {
+      this.fileWatcher = watch(this.filePath, (eventType) => {
+        if (eventType === "rename") {
+          console.warn(
+            `[NoteSync] Atomic save detected (rename), reconnecting watcher...`,
+          );
+          setTimeout(() => this.setupFileWatcher(), 50);
+          return;
+        }
+
+        // Debounce filts the trash change event Windows or mac triggered
+        if (this.watchDebounceTimer) clearTimeout(this.watchDebounceTimer);
+        this.watchDebounceTimer = setTimeout(async () => {
+          try {
+            const currentContent = await readFile(this.filePath!, "utf-8");
+
+            if (currentContent !== this.lastKnownContent) {
+              this.lastKnownContent = currentContent;
+              this.sendToClient({
+                type: "note_change",
+                newContent: this.lastKnownContent,
+              });
+            }
+          } catch (error) {
+            console.error("[NoteSync] Read error during watch event:", error);
+          }
+        }, 50);
+      });
+    } catch (error) {
+      console.error("[NoteSync] Failed to setup watcher:", error);
+    }
+  }
+
+  private handleUserEdit(newContent: string) {
+    if (this.lastKnownContent === newContent || !this.filePath) return;
+
+    this.lastKnownContent = newContent;
+
+    this.writeQueue = this.writeQueue
+      .then(async () => {
+        try {
+          await writeFile(this.filePath!, newContent, "utf-8");
+        } catch (err: any) {
+          this.error(`Write failed: ${err.message}`);
+        }
+      })
+      .catch((err) => console.error("Write queue error:", err));
   }
 
   private sendToClient(content: ServerToClientNoteMsg): void {
@@ -91,10 +114,14 @@ export class NoteSyncSession {
     }
   }
 
-  public close(): void {
-    if (this.fileWatcher) {
-      this.fileWatcher.close();
-    }
-    console.log(`[NoteSyncSession] Session ${this.sessionId} closed.`);
+  private error(message: string): boolean {
+    this.sendToClient({ type: "note_backend_error", message });
+    return true;
+  }
+
+  public destroy(): void {
+    if (this.watchDebounceTimer) clearTimeout(this.watchDebounceTimer);
+    if (this.fileWatcher) this.fileWatcher.close();
+    console.log(`[NoteSync] Session ${this.sessionId} destroyed.`);
   }
 }

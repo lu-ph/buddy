@@ -2,7 +2,7 @@ import readline from "readline";
 import WebSocket from "ws";
 import dotenv from "dotenv";
 import { WSChatMessageRequest } from "./types/agent-ws-vo";
-import { WSChatClient } from "./ws/ws-chat-client";
+import { WSChatClientCli } from "./ws/ws-chat-client-cli";
 
 dotenv.config();
 
@@ -21,13 +21,15 @@ const logger = {
     console.log(`\x1b[35m[Tool] ${name}: ${formattedInput}\x1b[0m`);
   },
   final: (success: boolean, cost: string, duration: string) => {
-    console.log(`[Done] success=${success}, duration=${duration}, cost=${cost}\n`);
+    console.log(
+      `[Done] success=${success}, duration=${duration}, cost=${cost}\n`,
+    );
   },
   error: (text: string) => console.log(`[Error] ${text}`),
   system: (text: string) => console.log(`[System] ${text}`),
 };
 
-let client: WSChatClient;
+let client: WSChatClientCli;
 
 function waitForPrompt(): void {
   rl.question("> ", (input) => {
@@ -47,7 +49,7 @@ function waitForPrompt(): void {
     }
 
     const chatRequest: WSChatMessageRequest = {
-      type: "chat",
+      type: "agent_chat",
       content: trimmedInput,
     };
 
@@ -60,4 +62,4 @@ function waitForPrompt(): void {
   });
 }
 
-client = new WSChatClient(logger, waitForPrompt);
+client = new WSChatClientCli(logger, waitForPrompt);

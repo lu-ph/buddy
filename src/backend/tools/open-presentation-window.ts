@@ -1,7 +1,7 @@
 import { createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
-import { exec } from "child_process";
 import path from "path";
 import { z } from "zod";
+import { openBrowser } from "../service/open-browser";
 
 export function createPresentationWindowMcpServer(): any {
   return createSdkMcpServer({
@@ -14,24 +14,16 @@ export function createPresentationWindowMcpServer(): any {
           "Open a PDF in the browser for explaining concepts or other uses. Opens the browser to localhost:5173/pdfviewer?filePath=xxx.pdf.",
         inputSchema: z.object({
           pdfPath: z.string().describe("Absolute path to the PDF file"),
-          notePath: z.string().describe("Absolute path to the note file")
+          notePath: z.string().describe("Absolute path to the note file"),
         }),
         handler: async ({ pdfPath, notePath }) => {
           const absolutePDFPath = path.resolve(pdfPath as string);
-          const absoluteNotePath = path.resolve(notePath as string)
+          const absoluteNotePath = path.resolve(notePath as string);
           const targetUrl = `http://localhost:5173/presentation-window?pdfPath=${encodeURIComponent(
             absolutePDFPath,
-          )}&notePath=${encodeURIComponent(
-            absoluteNotePath
-          )}`;
+          )}&notePath=${encodeURIComponent(absoluteNotePath)}`;
 
-          const flags = `--app="${targetUrl}" --window-position=960,0 --window-size=960,1040`;
-          const cmd =
-            process.platform === "win32"
-              ? `start chrome ${flags} || start msedge ${flags}`
-              : `open -n -a "Google Chrome" --args ${flags}`;
-
-          exec(cmd);
+          openBrowser(targetUrl, [960, 0], [960, 1040]);
 
           return {
             content: [

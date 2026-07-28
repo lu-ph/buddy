@@ -17,12 +17,12 @@ export interface WSNoteChange {
 
 // client -> server
 export interface WSUpdateUserEditedNote {
-  type: "update_user_edited_note";
+  type: "note_user_edited";
   newContent: string;
 }
 
 export interface WSNoteSessionClientErrorMessage {
-  type: "client_error";
+  type: "note_client_error";
   message: string;
 }
 

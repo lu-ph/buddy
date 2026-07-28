@@ -8,6 +8,5 @@ package.json
 tsconfig.json
 
 .prettierignore
-.prettierrc
 .gitignore
 .env.example
