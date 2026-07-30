@@ -17,7 +17,7 @@ export class AgentSession implements BaseSession {
   public async handleMessage(message: any): Promise<boolean> {
     if (this.isDestroyed) return false;
 
-    if (message.type === "chat" || message.type === "user_message") {
+    if (message.type === "agent_chat") {
       const content = message.content || message.text;
       if (typeof content === "string" && content.trim()) {
         this.sendToAgent(content);

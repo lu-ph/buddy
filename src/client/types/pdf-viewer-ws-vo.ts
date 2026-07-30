@@ -23,7 +23,7 @@ export type ClientToServerPDFMessage = WSGetPDF | WSPDFErrorMessage;
 
 // client -> server
 interface WSGetPDF {
-  type: "get_pdf";
+  type: "pdf_get";
   pdfPath: string;
 }
 

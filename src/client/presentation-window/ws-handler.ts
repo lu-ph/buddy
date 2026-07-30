@@ -44,7 +44,7 @@ export function usePdfWebSocket(
     ws.onopen = () => {
       console.log("[WS Connected]");
       sendMessage({
-        type: "get_pdf",
+        type: "pdf_get",
         pdfPath: filePath,
       });
     };
